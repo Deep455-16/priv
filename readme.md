@@ -1,1 +1,1 @@
-                                                                 Welcome !! to your very own Github-Commit Generator 
+Welcome !! to your very own Github-Commit Generator 
