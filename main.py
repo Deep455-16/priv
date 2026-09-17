@@ -21,11 +21,19 @@ def get_repo_path(prompt, default="."):
     while True:
         user_input = input(f"{prompt} (default current directory): ")
         if not user_input.strip():
-            return default
+            user_input = default
         if os.path.isdir(user_input):
+            git_dir = os.path.join(user_input, ".git")
+            if not os.path.exists(git_dir):
+                print(f"\nInitializing new git repository in {user_input}...")
+                subprocess.run(["git", "init"], cwd=user_input)
             return user_input
         else:
             print("Directory does not exist. Please enter a valid path.")
+
+def get_remote_url(prompt):
+    user_input = input(f"{prompt} (leave blank to skip): ")
+    return user_input.strip()
 
 def get_filename(prompt, default="data.txt"):
     user_input = input(f"{prompt} (default {default}): ")
@@ -63,6 +71,7 @@ def main():
 
     num_commits = get_positive_int("How many commits do you want to make", 20)
     repo_path = get_repo_path("Enter the path to your local git repository", ".")
+    remote_url = get_remote_url("Enter the GitHub repository URL to push to")
     filename = get_filename("Enter the filename to modify for commits", "data.txt")
 
     print(f"\nMaking {num_commits} commits in repo: {repo_path}\nModifying file: {filename}\n")
@@ -73,7 +82,18 @@ def main():
         make_commit(commit_date, repo_path, filename)
 
     print("\nPushing commits to your remote repository...")
-    subprocess.run(["git", "push"], cwd=repo_path)
+    if remote_url:
+        res = subprocess.run(["git", "remote"], cwd=repo_path, capture_output=True, text=True)
+        if "origin" in res.stdout:
+            subprocess.run(["git", "remote", "set-url", "origin", remote_url], cwd=repo_path)
+        else:
+            subprocess.run(["git", "remote", "add", "origin", remote_url], cwd=repo_path)
+        
+        subprocess.run(["git", "branch", "-M", "main"], cwd=repo_path)
+        subprocess.run(["git", "push", "-u", "origin", "main"], cwd=repo_path)
+    else:
+        subprocess.run(["git", "push"], cwd=repo_path)
+        
     print("✅ All done! Check your GitHub contribution graph in a few minutes.\n")
     print("Tip: Use a dedicated repository for best results. Happy coding!")
 
